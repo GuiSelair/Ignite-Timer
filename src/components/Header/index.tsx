@@ -10,10 +10,10 @@ export const Header = () => {
       <img src={logo} alt="" width={40} height={40} />
 
       <nav>
-        <NavLink to="/">
+        <NavLink to="/" title="Timer" end>
           <Timer size={24} />
         </NavLink>
-        <NavLink to="/history">
+        <NavLink to="/history" title="Histórico">
           <Clock size={24} />
         </NavLink>
       </nav>
