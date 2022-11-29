@@ -15,7 +15,7 @@ import {
 
 const newCycleFormValidationSchema = zod.object({
   task: zod.string().min(1, 'Informe a tarefa'),
-  minutesAmount: zod.number().min(1).max(60),
+  minutesAmount: zod.number().min(5).max(60),
 })
 
 type INewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>
@@ -52,7 +52,7 @@ export default function Home() {
         {activeCycle ? (
           <StopCountdownButton type="button" onClick={interruptCycle}>
             <HandPalm size={24} />
-            Começar
+            Interromper
           </StopCountdownButton>
         ) : (
           <StartCountdownButton disabled={isSubmitDisabled} type="submit">
