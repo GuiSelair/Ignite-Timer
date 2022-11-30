@@ -1,11 +1,19 @@
+import { differenceInSeconds } from 'date-fns'
 import {
   createContext,
   ReactNode,
   useCallback,
   useState,
   useReducer,
+  useEffect,
 } from 'react'
-import { ActionTypes, cyclesReducer, ICycle } from '../reducers/cycles'
+
+import {
+  addNewCycleAction,
+  markCurrentCycleAsFinishedAction,
+  markCurrentCycleAsInterruptAction,
+} from '../reducers/cycles/actions'
+import { cyclesReducer, ICycle } from '../reducers/cycles/reducer'
 
 interface ICreateCycleData {
   task: string
@@ -30,27 +38,39 @@ interface ICycleContextProvider {
 }
 
 export const CycleContextProvider = ({ children }: ICycleContextProvider) => {
-  const [cyclesState, dispatch] = useReducer(cyclesReducer, {
-    cycles: [],
-    activeCycleId: null,
-  })
-  const [amountSecondsPassed, setAmountSecondsPassed] = useState(0)
+  const [cyclesState, dispatch] = useReducer(
+    cyclesReducer,
+    {
+      cycles: [],
+      activeCycleId: null,
+    },
+    () => {
+      const storedStateAsJSON = localStorage.getItem(
+        '@ignite-timer:cycles-state-1.0.0',
+      )
+
+      if (storedStateAsJSON) {
+        return JSON.parse(storedStateAsJSON)
+      }
+    },
+  )
 
   const { activeCycleId, cycles } = cyclesState
-
   const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId)
 
-  const markCurrentCycleAsFinished = useCallback(() => {
-    dispatch({
-      type: ActionTypes.MARK_CURRENT_CYCLE_AS_FINISHED,
-      payload: {
-        activeCycleId,
-      },
-    })
-  }, [activeCycleId])
+  const [amountSecondsPassed, setAmountSecondsPassed] = useState(() => {
+    if (activeCycle)
+      return differenceInSeconds(new Date(), new Date(activeCycle.startDate))
+
+    return 0
+  })
 
   const updateAmountSecondsPassed = useCallback((value: number) => {
     setAmountSecondsPassed(value)
+  }, [])
+
+  const markCurrentCycleAsFinished = useCallback(() => {
+    dispatch(markCurrentCycleAsFinishedAction())
   }, [])
 
   const createNewCycle = useCallback((data: ICreateCycleData) => {
@@ -61,25 +81,20 @@ export const CycleContextProvider = ({ children }: ICycleContextProvider) => {
       startDate: new Date(),
     }
 
-    dispatch({
-      type: ActionTypes.ADD_NEW_CYCLE,
-      payload: {
-        newCycle,
-      },
-    })
+    dispatch(addNewCycleAction(newCycle))
 
     // reset()
     setAmountSecondsPassed(0)
   }, [])
 
   const interruptCycle = useCallback(() => {
-    dispatch({
-      type: ActionTypes.INTERRUPT_CURRENT_CYCLE,
-      payload: {
-        activeCycleId,
-      },
-    })
-  }, [activeCycleId])
+    dispatch(markCurrentCycleAsInterruptAction())
+  }, [])
+
+  useEffect(() => {
+    const stateJSON = JSON.stringify(cyclesState)
+    localStorage.setItem('@ignite-timer:cycles-state-1.0.0', stateJSON)
+  }, [cyclesState])
 
   return (
     <CyclesContext.Provider
